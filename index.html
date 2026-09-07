@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko" style="--hdrH: 102px;"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>힐마루케어 회복관리 입력 v34.13</title>
+<title>힐마루케어 회복관리 입력 v34.15</title>
 <!-- 완전 오프라인: 외부 CDN 없음. 자체 수식엔진 + 자체 ZIP 내장 -->
 <script>
 
@@ -936,11 +936,13 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>힐마루케어 회복관리 입력</h1>
-  <span class="badge">v34.13 · 2026-09-07</span>
+  <span class="badge">v34.15 · 2026-09-07</span>
   <span class="badge g">대시보드·자동 F/U 일정·취소이력 내장 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
   <input type="file" id="hdrImportInput" accept=".json" style="display:none">
+  <a href="https://tjwldms58.github.io/healmarucare-sleep/" target="_blank" class="no-print" style="background:#0369a1;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;">😴 수면</a>
+  <a href="http://localhost:8502/" target="_blank" class="no-print" style="background:#059669;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;">🤖 AI비서</a>
   <button id="logoutBtn" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
   <div class="toolbar no-print">
     <label>환자 <select id="selPat"><option value="0">정미경</option><option value="1">백미숙</option><option value="2">정정화</option><option value="3">김영자</option><option value="4">이정효</option><option value="5">안금자</option><option value="6">전윤지</option><option value="7">박영희</option><option value="8">강용주</option></select></label>
@@ -1008,11 +1010,13 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>방문일정 업무관리</h1>
-  <span class="badge">v34.13 · 2026-09-07</span>
+  <span class="badge">v34.15 · 2026-09-07</span>
   <span class="badge g">월간달력·방문일정·대상자목록·교통비정산 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn2" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn2" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
   <input type="file" id="hdrImportInput2" accept=".json" style="display:none">
+  <a href="https://tjwldms58.github.io/healmarucare-sleep/" target="_blank" class="no-print" style="background:#0369a1;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;">😴 수면</a>
+  <a href="http://localhost:8502/" target="_blank" class="no-print" style="background:#059669;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;">🤖 AI비서</a>
   <button id="logoutBtn2" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
   <div class="toolbar no-print">
     <button class="o" id="schedExportBtn">⬇ 엑셀 내보내기</button>
@@ -1041,7 +1045,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>회원 관리</h1>
-  <span class="badge">v34.13 · 2026-09-07</span>
+  <span class="badge">v34.15 · 2026-09-07</span>
   <span class="badge g">관리자 전용 · 가입 신청 목록 조회(읽기 전용)</span>
   <button id="logoutBtn3" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
 </header>
@@ -4559,6 +4563,7 @@ window.SchedApp = (function(){
     html+='<td></td>';
     html+='</tr></table></div>';
 
+    html+='<datalist id="taPatDL">'+(state.patients||[]).filter(p=>p.name).map(p=>'<option value="'+esc2(p.name)+'">').join('')+'</datalist>';
     html+='<div class="dashTableWrap"><table class="dashTbl schedTbl">';
     html+='<thead><tr><th style="width:36px">번호</th><th>방문일자</th><th>고객명</th><th>방문시작</th><th>방문종료</th><th>소요시간(분)</th><th>방문지역</th><th>방문목적</th></tr></thead><tbody>';
     for(let i=0;i<15;i++){
@@ -4567,7 +4572,7 @@ window.SchedApp = (function(){
       html+='<tr>';
       html+='<td style="text-align:center;font-weight:700;color:#0284c7;">'+(i+1)+'</td>';
       html+='<td><input type="date" class="schedCell tripApplyRow" data-i="'+i+'" data-f="방문일자" value="'+esc2(row.방문일자||'')+'"></td>';
-      html+='<td><input type="text" class="schedCell tripApplyRow" data-i="'+i+'" data-f="고객명" value="'+esc2(row.고객명||'')+'" placeholder="고객명"></td>';
+      html+='<td><input type="text" class="schedCell tripApplyRow" data-i="'+i+'" data-f="고객명" list="taPatDL" value="'+esc2(row.고객명||'')+'" placeholder="고객명"></td>';
       html+='<td><input type="time" class="schedCell tripApplyRow" data-i="'+i+'" data-f="방문시작" value="'+esc2(row.방문시작||'')+'"></td>';
       html+='<td><input type="time" class="schedCell tripApplyRow" data-i="'+i+'" data-f="방문종료" value="'+esc2(row.방문종료||'')+'"></td>';
       html+='<td style="text-align:center;background:#f0f9ff;font-weight:700;color:#0284c7;">'+(min!==''?min:'')+'</td>';
@@ -4639,6 +4644,30 @@ window.SchedApp = (function(){
         }
         autosave(); renderTripApply();
       };
+    });
+    // ★ 고객명 Enter 키로 즉시 방문지역 자동입력 (onchange는 blur 시 발동이라 Enter 시 누락됨)
+    function applyAutoFillName(idx, val){
+      if(!val) return;
+      if(!state.tripApply[tripApplyWeek]) state.tripApply[tripApplyWeek]={meta:{},rows:[]};
+      const rows2=state.tripApply[tripApplyWeek].rows;
+      while(rows2.length<=idx) rows2.push({});
+      rows2[idx]['고객명']=val;
+      const r=rows2[idx];
+      const matched=(state.patients||[]).find(p=>p.name===val);
+      if(matched && matched.address && !r.방문지역){ r.방문지역=matched.address; }
+      if(!state.tripReport[tripApplyWeek]) state.tripReport[tripApplyWeek]={meta:{},visits:[],expenses:[]};
+      const vis2=state.tripReport[tripApplyWeek].visits;
+      while(vis2.length<=idx) vis2.push({});
+      vis2[idx]['고객명']=val;
+      if(r.방문지역 && !vis2[idx].방문지역){ vis2[idx].방문지역=r.방문지역; }
+      autosave(); renderTripApply();
+    }
+    wrap.querySelectorAll('.tripApplyRow[data-f="고객명"]').forEach(inp=>{
+      inp.addEventListener('keydown',function(e){
+        if(e.key!=='Enter') return;
+        e.preventDefault();
+        applyAutoFillName(+this.dataset.i, this.value.trim());
+      });
     });
   }
   function importTripApplyXlsx(file, weekKey){
@@ -4723,6 +4752,7 @@ window.SchedApp = (function(){
     html+='<div class="section">📋 출장복명서 (방문 기록)</div>';
     html+='<div style="overflow-x:auto;transform:scale(1,-1);">';
     html+='<div style="transform:scale(1,-1);">';
+    html+='<datalist id="trPatDL">'+(state.patients||[]).filter(p=>p.name).map(p=>'<option value="'+esc2(p.name)+'">').join('')+'</datalist>';
     html+='<div class="dashTableWrap" style="overflow-x:visible;"><table class="dashTbl schedTbl">';
     html+='<thead><tr><th style="width:36px">번호</th><th>방문일자</th><th>고객명</th><th>방문시작</th><th>방문종료</th><th>소요시간(분)</th><th>방문지역</th><th>방문목적</th><th>출발구분</th><th>복귀구분</th></tr></thead><tbody>';
     for(let i=0;i<15;i++){
@@ -4731,7 +4761,7 @@ window.SchedApp = (function(){
       html+='<tr>';
       html+='<td style="text-align:center;font-weight:700;color:#7c3aed;">'+(i+1)+'</td>';
       html+='<td><input type="date" class="schedCell tripReportVisit" data-i="'+i+'" data-f="방문일자" value="'+esc2(row.방문일자||'')+'"></td>';
-      html+='<td><input type="text" class="schedCell tripReportVisit" data-i="'+i+'" data-f="고객명" value="'+esc2(row.고객명||'')+'" placeholder="고객명"></td>';
+      html+='<td><input type="text" class="schedCell tripReportVisit" data-i="'+i+'" data-f="고객명" list="trPatDL" value="'+esc2(row.고객명||'')+'" placeholder="고객명"></td>';
       html+='<td><input type="time" class="schedCell tripReportVisit" data-i="'+i+'" data-f="방문시작" value="'+esc2(row.방문시작||'')+'"></td>';
       html+='<td><input type="time" class="schedCell tripReportVisit" data-i="'+i+'" data-f="방문종료" value="'+esc2(row.방문종료||'')+'"></td>';
       html+='<td style="text-align:center;background:#f5f3ff;font-weight:700;color:#7c3aed;">'+(min!==''?min:'')+'</td>';
@@ -4857,8 +4887,28 @@ window.SchedApp = (function(){
         vis[+this.dataset.i][this.dataset.f]=this.value;
         const r=vis[+this.dataset.i];
         r.소요시간=calcMinutes(r.방문시작,r.방문종료);
+        // ★ 고객명 변경 시 대상자목록에서 방문지역 자동입력
+        if(this.dataset.f==='고객명' && this.value){
+          const matched=(state.patients||[]).find(p=>p.name===this.value);
+          if(matched && matched.address && !r.방문지역){ r.방문지역=matched.address; }
+        }
         autosave(); renderTripReport();
       };
+    });
+    // ★ 출장복명서 고객명 Enter 키로 즉시 방문지역 자동입력
+    wrap.querySelectorAll('.tripReportVisit[data-f="고객명"]').forEach(inp=>{
+      inp.addEventListener('keydown',function(e){
+        if(e.key!=='Enter') return;
+        e.preventDefault();
+        const i=+this.dataset.i; const val=this.value.trim(); if(!val) return;
+        if(!state.tripReport[tripReportWeek]) state.tripReport[tripReportWeek]={meta:{},visits:[],expenses:[]};
+        const vis=state.tripReport[tripReportWeek].visits;
+        while(vis.length<=i) vis.push({});
+        vis[i]['고객명']=val;
+        const matched=(state.patients||[]).find(p=>p.name===val);
+        if(matched && matched.address && !vis[i].방문지역){ vis[i].방문지역=matched.address; }
+        autosave(); renderTripReport();
+      });
     });
     wrap.querySelectorAll('.tripReportExp').forEach(inp=>{
       inp.onchange=function(){
