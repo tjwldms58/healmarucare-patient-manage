@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko" style="--hdrH: 102px;"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>힐마루케어 회복관리 입력 v34.15</title>
+<title>힐마루케어 회복관리 입력 v34.16</title>
 <!-- 완전 오프라인: 외부 CDN 없음. 자체 수식엔진 + 자체 ZIP 내장 -->
 <script>
 
@@ -804,31 +804,56 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
   var db=null;
   try{
     if(typeof firebase!=='undefined'){
-      firebase.initializeApp(FB_CFG);
-      db=firebase.firestore();
+      // [v34.16] 중복 초기화 방지 — 이미 앱이 있으면 재사용
+      var _fbApp;
+      try{ _fbApp=firebase.app(); }catch(e){ _fbApp=firebase.initializeApp(FB_CFG); }
+      db=_fbApp.firestore();
     }
-  }catch(e){ console.warn('[FB]',e.message); }
+  }catch(e){ console.warn('[FB] 초기화 오류:',e.message); }
 
   function cleanForFB(data){
     var c=JSON.parse(JSON.stringify(data));
-    // base64 이미지 제거 (Firestore 1MB 제한 대응)
+    // [v34.16] base64 이미지/파일 전체 제거 (Firestore 1MB 제한 대응)
     function stripFiles(arr){ return Array.isArray(arr)?arr.map(function(r){ return Object.assign({},r,{files:[],images:[]}); }):arr; }
     if(c.state && Array.isArray(c.state.receipts)) c.state.receipts=stripFiles(c.state.receipts);
     if(Array.isArray(c.receipts)) c.receipts=stripFiles(c.receipts);
+    // 환자 피드백 이미지(dataUrl) 제거
+    if(c.state && Array.isArray(c.state.patients)){
+      c.state.patients=c.state.patients.map(function(p){
+        var np=Object.assign({},p);
+        ['profFeedback','nutriFeedback'].forEach(function(field){
+          if(Array.isArray(np[field])){
+            np[field]=np[field].map(function(e){
+              if(e && e.type==='image') return {type:'image',source:e.source||'',createdAt:e.createdAt||''};
+              return e;
+            });
+          }
+        });
+        return np;
+      });
+    }
+    // 출장경비 파일 제거
+    if(c.tripReport){
+      Object.keys(c.tripReport).forEach(function(wk){
+        var wr=c.tripReport[wk];
+        if(wr && Array.isArray(wr.expenses)){
+          wr.expenses=wr.expenses.map(function(ex){ return Object.assign({},ex,{files:[]}); });
+        }
+      });
+    }
     return c;
   }
 
   async function fbSave(docId, data){
     if(!db) return false;
-    try{
-      var clean=cleanForFB(data);
-      var str=JSON.stringify(clean);
-      var compressed=(typeof LZString!=='undefined')?LZString.compressToUTF16(str):str;
-      await db.collection('hilmaru').doc(docId.replace(/\//g,'_')).set({
-        d:compressed, lz:typeof LZString!=='undefined', ts:Date.now()
-      });
-      return true;
-    }catch(e){ console.warn('[FB] 저장 오류:',e.message); return false; }
+    // [v34.16] 내부 catch 제거 → 실제 에러를 caller(.catch)로 전달해 헤더에 표시
+    var clean=cleanForFB(data);
+    var str=JSON.stringify(clean);
+    var compressed=(typeof LZString!=='undefined')?LZString.compressToUTF16(str):str;
+    await db.collection('hilmaru').doc(docId.replace(/\//g,'_')).set({
+      d:compressed, lz:typeof LZString!=='undefined', ts:Date.now()
+    });
+    return true;
   }
 
   async function fbLoad(docId){
@@ -936,7 +961,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>힐마루케어 회복관리 입력</h1>
-  <span class="badge">v34.15 · 2026-09-07</span>
+  <span class="badge">v34.16 · 2026-09-07</span>
   <span class="badge g">대시보드·자동 F/U 일정·취소이력 내장 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -1010,7 +1035,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>방문일정 업무관리</h1>
-  <span class="badge">v34.15 · 2026-09-07</span>
+  <span class="badge">v34.16 · 2026-09-07</span>
   <span class="badge g">월간달력·방문일정·대상자목록·교통비정산 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn2" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn2" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -1045,7 +1070,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>회원 관리</h1>
-  <span class="badge">v34.15 · 2026-09-07</span>
+  <span class="badge">v34.16 · 2026-09-07</span>
   <span class="badge g">관리자 전용 · 가입 신청 목록 조회(읽기 전용)</span>
   <button id="logoutBtn3" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
 </header>
@@ -2881,7 +2906,7 @@ window.SchedApp = (function(){
         window.hilmaruFB.save('sched_'+LS_KEY, payload).then(function(ok){
           const el2=document.getElementById('saveStatus2');
           if(ok && el2 && el2.textContent.includes('자동저장됨')) el2.textContent+=' ☁';
-        });
+        }).catch(function(e){ console.warn('[FB] 일정 저장 오류:',e.message); }); // [v34.16]
       }
     }catch(e){
       const el=document.getElementById('saveStatus2');
