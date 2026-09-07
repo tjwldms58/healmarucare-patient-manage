@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko" style="--hdrH: 102px;"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>힐마루케어 회복관리 입력 v34.11</title>
+<title>힐마루케어 회복관리 입력 v34.13</title>
 <!-- 완전 오프라인: 외부 CDN 없음. 자체 수식엔진 + 자체 ZIP 내장 -->
 <script>
 
@@ -936,7 +936,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>힐마루케어 회복관리 입력</h1>
-  <span class="badge">v34.11 · 2026-09-07</span>
+  <span class="badge">v34.13 · 2026-09-07</span>
   <span class="badge g">대시보드·자동 F/U 일정·취소이력 내장 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -1008,7 +1008,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>방문일정 업무관리</h1>
-  <span class="badge">v34.11 · 2026-09-07</span>
+  <span class="badge">v34.13 · 2026-09-07</span>
   <span class="badge g">월간달력·방문일정·대상자목록·교통비정산 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn2" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn2" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -1041,7 +1041,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>회원 관리</h1>
-  <span class="badge">v34.11 · 2026-09-07</span>
+  <span class="badge">v34.13 · 2026-09-07</span>
   <span class="badge g">관리자 전용 · 가입 신청 목록 조회(읽기 전용)</span>
   <button id="logoutBtn3" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
 </header>
@@ -2957,14 +2957,15 @@ window.SchedApp = (function(){
       patients.forEach(p=>{
         if(!p || !p.visits || !p.visits[0]) return;
         const start = p.startDateTBD ? "" : (p.visits[0].date||"");
-        const fuOverride=Array.isArray(p.fuOverride)? p.fuOverride : [null,null,null,null,null];
-        const fuCancelled=Array.isArray(p.fuCancelled)? p.fuCancelled : [false,false,false,false,false];
-        const fuTime=Array.isArray(p.fuTime)? p.fuTime : ['','','','',''];
+        const pFuCount=Math.max(1, typeof p.fuCount==='number'?p.fuCount:5);
+        const fuOverride=Array.isArray(p.fuOverride)? p.fuOverride : [];
+        const fuCancelled=Array.isArray(p.fuCancelled)? p.fuCancelled : [];
+        const fuTime=Array.isArray(p.fuTime)? p.fuTime : [];
         const addr=p.address||'';
         if(start) out.push({date:start, time:p.startTime||'', name:p.name, round:1, address:addr, cancelled:false});
         let prevDate=start;
         let actualRound=start?1:0; // 취소된 회차를 건너뛴 "실제" 방문 순번(달력 표시용)
-        for(let k=2;k<=6;k++){
+        for(let k=2;k<=pFuCount+1;k++){
           const ov=fuOverride[k-2];
           const val=ov||addDaysStr(prevDate,14);
           const isCancelled=!!fuCancelled[k-2];
@@ -3665,15 +3666,59 @@ window.SchedApp = (function(){
     const dayV=visits.filter(v=>v.방문일자===dateKey&&v.고객명)
                      .sort((a,b)=>(a.방문시작||'').localeCompare(b.방문시작||''));
     if(!dayV.length) return '';
-    if(dayV.length===1){
-      const p=(state.patients||[]).find(p=>p.name===dayV[0].고객명);
-      if(!p||p.homeDistRound===''||p.homeDistRound===undefined||p.homeDistRound===null) return '';
-      return Number(p.homeDistRound);
+    const firstVisit=dayV[0];
+    const lastVisit=dayV[dayV.length-1];
+
+    // 출발지 판단: 첫 방문 시작시간 기준 — 오전(~11:59)이면 집 출발, 오후(12:00~)이면 회사 출발
+    const startTime=firstVisit.방문시작||'';
+    const startHour=startTime?parseInt(startTime.split(':')[0],10):-1;
+    const startFromHome=(startHour>=0&&startHour<12);
+
+    // 종착지 판단: 마지막 방문 종료시간 기준 — 16:30 이하이면 회사 복귀, 초과이면 집 복귀
+    const endTime=lastVisit.방문종료||'';
+    let endToHome=false;
+    if(endTime){
+      const ep=endTime.split(':').map(Number);
+      endToHome=(ep[0]>16)||(ep[0]===16&&ep[1]>30);
     }
-    const pFirst=(state.patients||[]).find(p=>p.name===dayV[0].고객명);
-    const pLast=(state.patients||[]).find(p=>p.name===dayV[dayV.length-1].고객명);
-    const d1=(pFirst&&pFirst.homeDistOne!==''&&pFirst.homeDistOne!==undefined&&pFirst.homeDistOne!==null)?Number(pFirst.homeDistOne)||0:null;
-    const dN=(pLast&&pLast.homeDistOne!==''&&pLast.homeDistOne!==undefined&&pLast.homeDistOne!==null)?Number(pLast.homeDistOne)||0:null;
+
+    const getDistVal=(p,key)=>(p&&p[key]!==''&&p[key]!==undefined&&p[key]!==null)?Number(p[key]):null;
+    const pFirst=(state.patients||[]).find(p=>p.name===firstVisit.고객명);
+    const pLast=(state.patients||[]).find(p=>p.name===lastVisit.고객명);
+
+    if(dayV.length===1){
+      // 단일 방문: 출발지→환자→종착지
+      const p=pFirst;
+      if(!startTime){
+        // 시간 없으면 기존 방식(집→왕복)
+        if(!p||getDistVal(p,'homeDistRound')===null) return '';
+        return getDistVal(p,'homeDistRound');
+      }
+      if(startFromHome&&!endToHome){
+        // 집→환자→회사
+        const d1=getDistVal(p,'homeDistOne'); const dN=getDistVal(p,'distOne');
+        if(d1===null||dN===null) return '';
+        return Math.round((d1+dN)*10)/10;
+      } else if(startFromHome&&endToHome){
+        // 집→환자→집 (왕복)
+        const d=getDistVal(p,'homeDistRound'); if(d===null) return ''; return d;
+      } else if(!startFromHome&&!endToHome){
+        // 회사→환자→회사 (왕복)
+        const d=getDistVal(p,'distRound'); if(d===null) return ''; return d;
+      } else {
+        // 회사→환자→집
+        const d1=getDistVal(p,'distOne'); const dN=getDistVal(p,'homeDistOne');
+        if(d1===null||dN===null) return '';
+        return Math.round((d1+dN)*10)/10;
+      }
+    }
+
+    // 복수 방문: 첫 다리(출발지→첫환자) + A→B + 마지막 다리(마지막환자→종착지)
+    // 시간 정보 없으면 기존 방식(집 기준) 유지
+    const firstKey=(!startTime)?'homeDistOne':(startFromHome?'homeDistOne':'distOne');
+    const lastKey=(!endTime)?'homeDistOne':(endToHome?'homeDistOne':'distOne');
+    const d1=getDistVal(pFirst,firstKey);
+    const dN=getDistVal(pLast,lastKey);
     if(d1===null||dN===null) return '';
     const inter=Number(interDist)||0;
     return Math.round((d1+inter+dN)*10)/10;
