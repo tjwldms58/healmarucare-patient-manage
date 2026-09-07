@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko" style="--hdrH: 102px;"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>힐마루케어 회복관리 입력 v33.9</title>
+<title>힐마루케어 회복관리 입력 v33.10</title>
 <!-- 완전 오프라인: 외부 CDN 없음. 자체 수식엔진 + 자체 ZIP 내장 -->
 <script>
 
@@ -400,6 +400,8 @@ button.r{background:#dc2626;color:#fff}
 #panels{padding:14px;max-width:1180px;margin:0 auto}
 .panel{display:none;background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .panel.active{display:block}
+.panelGroup.active{display:flex!important;gap:14px;align-items:flex-start}
+.dualHalf{flex:1;min-width:0;background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .panel .desc{font-size:15px;color:#64748b;background:#f8fafc;border-left:3px solid #cbd5e1;padding:8px 11px;border-radius:0 6px 6px 0;margin-bottom:14px;white-space:pre-wrap}
 .section{margin:18px 0 6px;font-size:15px;font-weight:700;color:#0f172a;border-left:4px solid #2563eb;padding-left:9px}
 .section.calc{border-color:#0284c7}
@@ -466,6 +468,8 @@ button.p{background:#0ea5a4}
 .tab.active{box-shadow:0 3px 10px rgba(22,163,74,.25);color:var(--g-text) !important}
 #panels{max-width:1180px}
 .panel{border-radius:20px;box-shadow:0 6px 20px rgba(15,23,42,.06),0 1px 3px rgba(15,23,42,.04);border:1px solid #e6ebf1}
+.dualHalf{border-radius:20px;box-shadow:0 6px 20px rgba(15,23,42,.06),0 1px 3px rgba(15,23,42,.04);border:1px solid #e6ebf1}
+.panelGroup{border:none!important;box-shadow:none!important;padding:0!important;background:transparent!important;border-radius:0!important}
 .panel .desc{background:var(--g-paler);border-left:3px solid var(--g-mid);border-radius:0 10px 10px 0;color:#0c4a6e}
 .section{border-left:4px solid var(--g-mid);color:var(--g-deep)}
 .section.calc{border-color:#0284c7}
@@ -551,7 +555,12 @@ input.val:focus,select.val:focus,textarea.val:focus{outline:2px solid var(--g-so
 .dashHead{margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid #e6ebf1}
 .dashHead h2{margin:0;color:var(--g-deep);font-size:19px}
 .dashHead p{margin:8px 0 0;color:#64748b;font-size:15px}
-.dashTableWrap{overflow-x:auto;border-radius:20px;border:1px solid #e6ebf1;box-shadow:0 6px 20px rgba(15,23,42,.06),0 1px 3px rgba(15,23,42,.04);background:#fff}
+.dashScrollTop{overflow-x:auto;overflow-y:hidden;border-radius:20px 20px 0 0;border:1px solid #e6ebf1;border-bottom:none;background:#f0f9ff}
+.dashScrollTop .dashScrollInner{height:10px}
+.dashTableWrap{overflow-x:auto;border-radius:0 0 20px 20px;border:1px solid #e6ebf1;border-top:none;box-shadow:0 6px 20px rgba(15,23,42,.06),0 1px 3px rgba(15,23,42,.04);background:#fff}
+.dashTblOuter{border-radius:20px;overflow:hidden;box-shadow:0 6px 20px rgba(15,23,42,.06),0 1px 3px rgba(15,23,42,.04)}
+.fuAddBtn{border:2px dashed #0284c7;background:#f0f9ff;color:#0284c7;border-radius:8px;padding:4px 12px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap}
+.fuAddBtn:hover{background:#e0f2fe}
 table.dashTbl{width:100%;border-collapse:separate;border-spacing:0;background:#fff;font-size:15px}
 table.dashTbl thead th{background:#e0f2fe;color:var(--g-deep);padding:12px 10px;
   font-size:15px;font-weight:700;white-space:nowrap;border-bottom:2px solid var(--g-border)}
@@ -931,7 +940,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>힐마루케어 회복관리 입력</h1>
-  <span class="badge">v33.9 · 2026-09-07</span>
+  <span class="badge">v33.10 · 2026-09-07</span>
   <span class="badge g">대시보드·자동 F/U 일정·취소이력 내장 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="logoutBtn" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
   <div class="toolbar no-print">
@@ -940,9 +949,9 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <label>검사일자 <select id="selVisit"><option value="0">1회차 · 2026-06-22</option><option value="1">2회차 · 2026-07-14</option><option value="2">3회차 · 2026-07-28</option><option value="3">4회차 · 2026-08-11</option><option value="4">5회차 · 2026-08-25</option><option value="5">6회차 · 2026-07-06</option></select></label>
     <button id="addVisit">+회차</button>
     <button class="r" id="delVisit" title="현재 선택한 회차(검사일자)를 삭제">🗑 회차삭제</button>
-    <button class="g" id="saveOne">💾 이 환자 저장</button>
     <button class="p" id="saveAll">🗄 전체 백업</button>
-    <button id="fileSaveBtn" title="JSON 파일에 자동저장(File System Access API · Chrome/Edge 전용)">📁 파일 연결</button>
+    <button class="p2" id="patImportBtn">📥 JSON 불러오기</button>
+    <input type="file" id="patImportInput" accept=".json" style="display:none">
     <button class="o2" id="htmlDlBtn" title="현재 모든 데이터를 HTML에 내장해 다운로드">🌐 앱+데이터 저장</button>
     <button class="o" id="exportBtn">⬇ 엑셀(원본서식)</button>
     <button class="p2" id="printBtn">🖨 문답지 인쇄</button><span id="saveStatus" class="savestat ok">이전 작업 복원됨</span>
@@ -1003,7 +1012,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>방문일정 업무관리</h1>
-  <span class="badge">v33.9 · 2026-09-07</span>
+  <span class="badge">v33.10 · 2026-09-07</span>
   <span class="badge g">월간달력·방문일정·대상자목록·교통비정산 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="logoutBtn2" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
   <div class="toolbar no-print">
@@ -1011,7 +1020,8 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="p2" id="schedImportBtn">⬆ 엑셀 불러오기</button>
     <input type="file" id="schedFileInput" accept=".xlsx" style="display:none">
     <button class="p" id="schedBackupBtn">🗄 전체 백업(JSON)</button>
-    <button id="fileSaveBtn2" title="JSON 파일에 자동저장(File System Access API · Chrome/Edge 전용)">📁 파일 연결</button>
+    <button class="p2" id="schedJsonImportBtn">📥 JSON 불러오기</button>
+    <input type="file" id="schedJsonImportInput" accept=".json" style="display:none">
     <button class="o2" id="htmlDlBtn2" title="현재 모든 데이터를 HTML에 내장해 다운로드">🌐 앱+데이터 저장</button>
     <span id="saveStatus2" class="savestat ok">자동저장됨 · 오후 05:14:25</span>
   </div>
@@ -1035,7 +1045,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>회원 관리</h1>
-  <span class="badge">v33.9 · 2026-09-07</span>
+  <span class="badge">v33.10 · 2026-09-07</span>
   <span class="badge g">관리자 전용 · 가입 신청 목록 조회(읽기 전용)</span>
   <button id="logoutBtn3" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
 </header>
@@ -1149,8 +1159,14 @@ function buildTabs(){
   items.push({ids:['panel-feedback'],label:'💬 피드백',color:'#7c3aed',onshow:renderFeedback,kind:'feedback'});
   items.push({ids:['panel-vitals'],label:'📊 상태관찰',color:'#0f766e',onshow:renderVitals,kind:'vitals'});
   if(cv===0){
-    // 1회차: v9.1과 동일하게 01~09 시트를 각각 별도 탭으로 노출
-    ORDER.forEach((sn,i)=>items.push({ids:['panel_'+i],label:TM[sn].t,color:TM[sn].c,kind:'visit'}));
+    // 1회차: 01~09 시트를 2개씩 묶어서 4개 탭으로 노출 (좌우 배치)
+    const PAIR_TABS=[
+      {label:'01·02 기본정보·선별', color:'#0284c7'},
+      {label:'04·05 증상·활력·영양', color:'#ea580c'},
+      {label:'06·07 기능·심리', color:'#7c3aed'},
+      {label:'08·09 암종별·핵심요약', color:'#0f766e'},
+    ];
+    PAIR_TABS.forEach((pt,gi)=>items.push({ids:['panel_g'+gi],label:pt.label,color:pt.color,kind:'visit'}));
   }else{
     // 2회차 이상: Follow up 단일 탭
     items.push({ids:['panel-followup'],label:'🩺 Follow up',color:'#0ea5a4',onshow:renderFollowup,kind:'visit'});
@@ -1271,8 +1287,9 @@ function buildPanels(){
     t.appendChild(tb);p.appendChild(t);
   }
 
+  const _panelEls=[];
   ORDER.forEach((sn,i)=>{
-    const p=document.createElement('div'); p.className="panel sheet-"+sn.split("_")[0]; p.id="panel_"+i;
+    const p=document.createElement('div'); p.className="dualHalf sheet-"+sn.split("_")[0]; p.id="panel_"+i;
     p.innerHTML='<div class="desc">'+(DESC[sn]||"")+'</div>';
     const isCancer=(sn==="08_암종별평가");
     const pol=POL[sn]||{};
@@ -1363,7 +1380,13 @@ function buildPanels(){
       });
       p.appendChild(wrap);
     }
-    panels.appendChild(p);
+    _panelEls.push(p);
+  });
+  // 패널을 2개씩 묶어서 panelGroup으로 래핑
+  [[0,1],[2,3],[4,5],[6,7]].forEach((pair,gi)=>{
+    const grp=document.createElement('div'); grp.className="panel panelGroup"; grp.id="panel_g"+gi;
+    pair.forEach(i=>{ if(_panelEls[i]) grp.appendChild(_panelEls[i]); });
+    panels.appendChild(grp);
   });
 
   function buildInputTable(p,sn,inputs,isCancer,inlineCols,byRow){
@@ -1495,6 +1518,7 @@ function patientPriorityCare(p){
 function renderDashboard(){
   const wrap=document.getElementById('panel-dashboard'); if(!wrap) return;
   if(!Array.isArray(state.folderList)) state.folderList=[];
+  const fuCount=typeof state.fuCount==='number'?Math.max(5,state.fuCount):5; // 2차~(fuCount+1)차
   // [v33.6] 폴더 사이드바 HTML
   let sideHtml='<div class="folderSidebar">'
     +'<div class="folderSidebarTitle">폴더</div>'
@@ -1513,12 +1537,17 @@ function renderDashboard(){
     const startTBD=!!p.startDateTBD;
     const startRaw=p.visits[0]?p.visits[0].date:"";
     const start=startTBD?"":startRaw;
-    if(!Array.isArray(p.fuOverride)) p.fuOverride=[null,null,null,null,null];
-    if(!Array.isArray(p.fuDone)) p.fuDone=[false,false,false,false,false];
-    if(!Array.isArray(p.fuCancelled)) p.fuCancelled=[false,false,false,false,false];
+    if(!Array.isArray(p.fuOverride)) p.fuOverride=[];
+    while(p.fuOverride.length<fuCount) p.fuOverride.push(null);
+    if(!Array.isArray(p.fuDone)) p.fuDone=[];
+    while(p.fuDone.length<fuCount) p.fuDone.push(false);
+    if(!Array.isArray(p.fuCancelled)) p.fuCancelled=[];
+    while(p.fuCancelled.length<fuCount) p.fuCancelled.push(false);
+    if(!Array.isArray(p.fuTime)) p.fuTime=[];
+    while(p.fuTime.length<fuCount) p.fuTime.push('');
     const fu=[]; let prevDate=start;
-    for(let k=2;k<=6;k++){
-      const ov=p.fuOverride[k-2];
+    for(let k=0;k<fuCount;k++){
+      const ov=p.fuOverride[k];
       const val=ov||addDaysStr(prevDate,14);
       fu.push(val);
       if(val) prevDate=val;
@@ -1532,16 +1561,29 @@ function renderDashboard(){
     if(typeof p.giftItem!=='string') p.giftItem='';
     if(typeof p.address!=='string') p.address='';
     if(typeof p.startTime!=='string') p.startTime='';
-    if(!Array.isArray(p.fuTime)) p.fuTime=['','','','',''];
     return {idx,name:p.name,gender:gender||"—",age:(age===""?"—":age+"세"),start,startRaw,startTBD,fu,fuDone:p.fuDone,fuCancelled:p.fuCancelled,priority:effPriority,priorityOverride:p.priorityOverride,priorityComment:p.priorityComment,giftGiven3:p.giftGiven3,giftGiven6:p.giftGiven6,giftItem:p.giftItem,address:p.address,startTime:p.startTime,fuTime:p.fuTime};
   });
+  // 동적 헤더 생성 (2차 F/U ~ (fuCount+1)차 F/U)
+  let fuHeaders='';
+  for(let k=0;k<fuCount;k++){
+    const n=k+2;
+    const sub=(n===3||n===6)?'<br><span class="fusub">(선물제공)</span>':'';
+    fuHeaders+='<th>'+n+'차 F/U'+sub+'</th>';
+  }
+  // + 버튼 (새 회차 추가)
+  fuHeaders+='<th style="min-width:56px"><button class="fuAddBtn" id="fuAddColBtn">＋</button></th>';
+  const totalCols=5+fuCount+1+1; // 번호,이름,성별,나이,시작 + fu + 우선순위,선물,관리 (+버튼 th는 fu 내에 있음)
+  const colspanAll=5+1+fuCount+3; // 5고정 + +버튼열 + fuCount + 우선순위+선물+관리
   let tableHtml='<div class="dashHead"><h2>📋 등록 대상자 대시보드</h2></div>';
-  tableHtml+='<div class="dashTableWrap"><table class="dashTbl"><thead><tr>'
-      +'<th>번호</th><th>이름</th><th>성별</th><th>나이</th><th>방문케어 시작일<br><span class="fusub">(1차·첫방문)</span></th>'
-      +'<th>2차 F/U</th><th>3차 F/U<br><span class="fusub">(선물제공)</span></th><th>4차 F/U</th><th>5차 F/U</th><th>6차 F/U<br><span class="fusub">(선물제공)</span></th><th class="dashPriorityHdr">우선순위 케어</th><th>선물제공</th><th>관리</th>'
-      +'</tr></thead><tbody>';
+  tableHtml+='<div class="dashTblOuter">'
+    +'<div class="dashScrollTop" id="dashScrollTop"><div class="dashScrollInner" id="dashScrollInner"></div></div>'
+    +'<div class="dashTableWrap" id="dashTableWrap"><table class="dashTbl" id="dashMainTbl"><thead><tr>'
+    +'<th>번호</th><th>이름</th><th>성별</th><th>나이</th><th>방문케어 시작일<br><span class="fusub">(1차·첫방문)</span></th>'
+    +fuHeaders
+    +'<th class="dashPriorityHdr">우선순위 케어</th><th>선물제공</th><th>관리</th>'
+    +'</tr></thead><tbody>';
   if(rows.length===0){
-    tableHtml+='<tr><td colspan="13" class="dashEmpty">이 폴더에 등록된 대상자가 없습니다.</td></tr>';
+    tableHtml+='<tr><td colspan="'+colspanAll+'" class="dashEmpty">이 폴더에 등록된 대상자가 없습니다.</td></tr>';
   }
   rows.forEach(r=>{
     tableHtml+='<tr>'
@@ -1560,6 +1602,7 @@ function renderDashboard(){
           +'<label class="fuDoneLbl"><input type="checkbox" class="fuDoneChk" data-idx="'+r.idx+'" data-k="'+i+'" '+(r.fuDone[i]?'checked':'')+(r.fuCancelled[i]?' disabled':'')+'>완료</label>'
           +'<button class="fuCancelBtn'+(r.fuCancelled[i]?' active':'')+'" data-idx="'+r.idx+'" data-k="'+i+'">'+(r.fuCancelled[i]?'취소 해제':'취소')+'</button>'
         +'</td>').join('')
+      +'<td></td>'
       +'<td class="dashPriority"><span class="prioWrap" data-idx="'+r.idx+'">'
         +(r.priority?('<span class="prioTag">'+esc(r.priority)+'</span>'):'<span class="dashMuted">—</span>')
         +'<button class="prioEditBtn" data-idx="'+r.idx+'" title="우선순위 케어 직접 수정">수정</button>'
@@ -1576,7 +1619,7 @@ function renderDashboard(){
       +'</td>'
       +'</tr>';
   });
-  tableHtml+='</tbody></table></div>';
+  tableHtml+='</tbody></table></div></div>'; // dashTableWrap + dashTblOuter 닫기
   // [v33.6] 폴더 레이아웃으로 조합
   wrap.innerHTML='<div class="folderLayout">'+sideHtml+'<div class="folderContent">'+tableHtml+'</div></div>';
   // 폴더 클릭 핸들러
@@ -1672,7 +1715,8 @@ function renderDashboard(){
     inp.onchange=()=>{
       const idx=+inp.dataset.idx, k=+inp.dataset.k;
       const p=state.patients[idx]; if(!p) return;
-      if(!Array.isArray(p.fuOverride)) p.fuOverride=[null,null,null,null,null];
+      if(!Array.isArray(p.fuOverride)) p.fuOverride=[];
+      while(p.fuOverride.length<=k) p.fuOverride.push(null);
       p.fuOverride[k]=inp.value||null;
       autosave();
       renderDashboard();
@@ -1682,7 +1726,8 @@ function renderDashboard(){
     inp.onchange=()=>{
       const idx=+inp.dataset.idx, k=+inp.dataset.k;
       const p=state.patients[idx]; if(!p) return;
-      if(!Array.isArray(p.fuTime)) p.fuTime=['','','','',''];
+      if(!Array.isArray(p.fuTime)) p.fuTime=[];
+      while(p.fuTime.length<=k) p.fuTime.push('');
       p.fuTime[k]=inp.value||"";
       autosave();
     };
@@ -1691,7 +1736,8 @@ function renderDashboard(){
     chk.onchange=()=>{
       const idx=+chk.dataset.idx, k=+chk.dataset.k;
       const p=state.patients[idx]; if(!p) return;
-      if(!Array.isArray(p.fuDone)) p.fuDone=[false,false,false,false,false];
+      if(!Array.isArray(p.fuDone)) p.fuDone=[];
+      while(p.fuDone.length<=k) p.fuDone.push(false);
       p.fuDone[k]=chk.checked;
       autosave();
       renderDashboard();
@@ -1701,12 +1747,31 @@ function renderDashboard(){
     btn.onclick=()=>{
       const idx=+btn.dataset.idx, k=+btn.dataset.k;
       const p=state.patients[idx]; if(!p) return;
-      if(!Array.isArray(p.fuCancelled)) p.fuCancelled=[false,false,false,false,false];
+      if(!Array.isArray(p.fuCancelled)) p.fuCancelled=[];
+      while(p.fuCancelled.length<=k) p.fuCancelled.push(false);
       p.fuCancelled[k]=!p.fuCancelled[k];
       autosave();
       renderDashboard();
     };
   });
+  // 회차 추가 버튼
+  const fuAddColBtn=document.getElementById('fuAddColBtn');
+  if(fuAddColBtn) fuAddColBtn.onclick=()=>{
+    state.fuCount=(typeof state.fuCount==='number'?state.fuCount:5)+1;
+    autosave();
+    renderDashboard();
+  };
+  // 상단 스크롤바 동기화
+  const dashScrollTop=document.getElementById('dashScrollTop');
+  const dashTableWrap=document.getElementById('dashTableWrap');
+  const dashMainTbl=document.getElementById('dashMainTbl');
+  if(dashScrollTop && dashTableWrap && dashMainTbl){
+    const inner=document.getElementById('dashScrollInner');
+    if(inner) inner.style.width=dashMainTbl.scrollWidth+'px';
+    let syncingTop=false, syncingBot=false;
+    dashScrollTop.onscroll=()=>{ if(syncingTop) return; syncingBot=true; dashTableWrap.scrollLeft=dashScrollTop.scrollLeft; syncingBot=false; };
+    dashTableWrap.onscroll=()=>{ if(syncingBot) return; syncingTop=true; dashScrollTop.scrollLeft=dashTableWrap.scrollLeft; syncingTop=false; };
+  }
   wrap.querySelectorAll('.prioEditBtn').forEach(btn=>{
     btn.onclick=()=>{
       const idx=+btn.dataset.idx;
@@ -2345,13 +2410,37 @@ document.getElementById('delVisit').onclick=()=>{
 
 // ---------- JSON save/load (3번: 환자별 + 전체 + 병합 선택) ----------
 function dl(name,obj){const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();}
-document.getElementById('saveOne').onclick=()=>{
-  const p=state.patients[cp];
-  dl(p.visits[cv].date+"_"+p.name+".json",{type:"patient",version:CFG.version,patient:p});
-};
 document.getElementById('saveAll').onclick=()=>{
   dl("힐마루케어_전체백업_"+new Date().toISOString().slice(0,10)+".json",{type:"all",version:CFG.version,state:state});
 };
+
+// ---------- 환자앱 JSON 불러오기 ----------
+(function(){
+  const btn=document.getElementById('patImportBtn');
+  const inp=document.getElementById('patImportInput');
+  if(!btn||!inp) return;
+  btn.onclick=()=>inp.click();
+  inp.onchange=(e)=>{
+    const f=e.target.files&&e.target.files[0]; if(!f) return;
+    const reader=new FileReader();
+    reader.onload=(ev)=>{
+      let parsed; try{ parsed=JSON.parse(ev.target.result); }catch(err){ alert("JSON 파일을 읽을 수 없습니다."); return; }
+      let newState=null;
+      if(parsed.type==='all' && parsed.state){ newState=parsed.state; }
+      else if(parsed.type==='patient' && parsed.patient){
+        newState=JSON.parse(JSON.stringify(state));
+        const name=parsed.patient.name;
+        const idx=newState.patients.findIndex(p=>p.name===name);
+        if(idx>=0){ newState.patients[idx]=parsed.patient; }
+        else{ newState.patients.push(parsed.patient); }
+      } else { alert("지원하지 않는 JSON 형식입니다."); return; }
+      try{ localStorage.setItem(LS_KEY, JSON.stringify(newState)); }catch(e2){}
+      location.reload();
+    };
+    reader.readAsText(f,'utf-8');
+    inp.value="";
+  };
+})();
 
 // ---------- Export: 원본 ZIP 서식 100% 보존 + 입력값/계산값 셀만 교체 ----------
 function b64toU8(b64){const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
@@ -5269,6 +5358,25 @@ window.SchedApp = (function(){
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
       a.download="방문일정_업무관리_전체백업_"+todayYYYYMMDD()+".json"; a.click();
     };
+    const jsonImpBtn=document.getElementById('schedJsonImportBtn');
+    const jsonImpInput=document.getElementById('schedJsonImportInput');
+    if(jsonImpBtn && jsonImpInput){
+      jsonImpBtn.onclick=()=>jsonImpInput.click();
+      jsonImpInput.onchange=(e)=>{
+        const f=e.target.files&&e.target.files[0]; if(!f) return;
+        const reader=new FileReader();
+        reader.onload=(ev)=>{
+          let parsed; try{ parsed=JSON.parse(ev.target.result); }catch(err){ alert("JSON 파일을 읽을 수 없습니다."); return; }
+          if(parsed.type==='schedAll' && parsed.state){
+            Object.assign(state, parsed.state);
+            autosave(); renderAll(); activateTab(0);
+            alert('JSON 불러오기 완료');
+          } else { alert("지원하지 않는 JSON 형식입니다.\n(방문일정 전체백업 파일을 선택해주세요)"); }
+        };
+        reader.readAsText(f,'utf-8');
+        jsonImpInput.value="";
+      };
+    }
   }
 
   function init(isAdmin, uid){
@@ -5645,7 +5753,6 @@ window.SchedApp = (function(){
   function wireLogout(id){
     const b=document.getElementById(id);
     if(b) b.onclick=function(){
-      if(!confirm("로그아웃 하시겠습니까?")) return;
       try{ sessionStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(ROLE_KEY); sessionStorage.removeItem(NAME_KEY); sessionStorage.removeItem(UID_KEY); }catch(e){}
       location.reload();
     };
