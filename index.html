@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko" style="--hdrH: 102px;"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>힐마루케어 회복관리 입력 v33.12</title>
+<title>힐마루케어 회복관리 입력 v34.10</title>
 <!-- 완전 오프라인: 외부 CDN 없음. 자체 수식엔진 + 자체 ZIP 내장 -->
 <script>
 
@@ -936,7 +936,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>힐마루케어 회복관리 입력</h1>
-  <span class="badge">v33.12 · 2026-09-07</span>
+  <span class="badge">v34.10 · 2026-09-07</span>
   <span class="badge g">대시보드·자동 F/U 일정·취소이력 내장 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -1008,7 +1008,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>방문일정 업무관리</h1>
-  <span class="badge">v33.12 · 2026-09-07</span>
+  <span class="badge">v34.10 · 2026-09-07</span>
   <span class="badge g">월간달력·방문일정·대상자목록·교통비정산 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn2" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn2" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -1041,7 +1041,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>회원 관리</h1>
-  <span class="badge">v33.12 · 2026-09-07</span>
+  <span class="badge">v34.10 · 2026-09-07</span>
   <span class="badge g">관리자 전용 · 가입 신청 목록 조회(읽기 전용)</span>
   <button id="logoutBtn3" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
 </header>
@@ -1500,7 +1500,9 @@ function patientPriorityCare(p){
 function renderDashboard(){
   const wrap=document.getElementById('panel-dashboard'); if(!wrap) return;
   if(!Array.isArray(state.folderList)) state.folderList=[];
-  const fuCount=typeof state.fuCount==='number'?Math.max(5,state.fuCount):5; // 2차~(fuCount+1)차
+  // 환자별 fuCount 사용; 전역 state.fuCount는 더 이상 사용하지 않음
+  const getPatFuCount=p=>Math.max(1, typeof p.fuCount==='number'?p.fuCount:5);
+  const maxFuCount=state.patients.length?Math.max(...state.patients.map(getPatFuCount)):5;
   // [v33.6] 폴더 사이드바 HTML
   let sideHtml='<div class="folderSidebar">'
     +'<div class="folderSidebarTitle">폴더</div>'
@@ -1519,16 +1521,17 @@ function renderDashboard(){
     const startTBD=!!p.startDateTBD;
     const startRaw=p.visits[0]?p.visits[0].date:"";
     const start=startTBD?"":startRaw;
+    const pFuCount=getPatFuCount(p);
     if(!Array.isArray(p.fuOverride)) p.fuOverride=[];
-    while(p.fuOverride.length<fuCount) p.fuOverride.push(null);
+    while(p.fuOverride.length<pFuCount) p.fuOverride.push(null);
     if(!Array.isArray(p.fuDone)) p.fuDone=[];
-    while(p.fuDone.length<fuCount) p.fuDone.push(false);
+    while(p.fuDone.length<pFuCount) p.fuDone.push(false);
     if(!Array.isArray(p.fuCancelled)) p.fuCancelled=[];
-    while(p.fuCancelled.length<fuCount) p.fuCancelled.push(false);
+    while(p.fuCancelled.length<pFuCount) p.fuCancelled.push(false);
     if(!Array.isArray(p.fuTime)) p.fuTime=[];
-    while(p.fuTime.length<fuCount) p.fuTime.push('');
+    while(p.fuTime.length<pFuCount) p.fuTime.push('');
     const fu=[]; let prevDate=start;
-    for(let k=0;k<fuCount;k++){
+    for(let k=0;k<pFuCount;k++){
       const ov=p.fuOverride[k];
       const val=ov||addDaysStr(prevDate,14);
       fu.push(val);
@@ -1543,19 +1546,17 @@ function renderDashboard(){
     if(typeof p.giftItem!=='string') p.giftItem='';
     if(typeof p.address!=='string') p.address='';
     if(typeof p.startTime!=='string') p.startTime='';
-    return {idx,name:p.name,gender:gender||"—",age:(age===""?"—":age+"세"),start,startRaw,startTBD,fu,fuDone:p.fuDone,fuCancelled:p.fuCancelled,priority:effPriority,priorityOverride:p.priorityOverride,priorityComment:p.priorityComment,giftGiven3:p.giftGiven3,giftGiven6:p.giftGiven6,giftItem:p.giftItem,address:p.address,startTime:p.startTime,fuTime:p.fuTime};
+    return {idx,name:p.name,gender:gender||"—",age:(age===""?"—":age+"세"),start,startRaw,startTBD,fu,fuDone:p.fuDone,fuCancelled:p.fuCancelled,priority:effPriority,priorityOverride:p.priorityOverride,priorityComment:p.priorityComment,giftGiven3:p.giftGiven3,giftGiven6:p.giftGiven6,giftItem:p.giftItem,address:p.address,startTime:p.startTime,fuTime:p.fuTime,pFuCount};
   });
-  // 동적 헤더 생성 (2차 F/U ~ (fuCount+1)차 F/U)
+  // 동적 헤더 생성 (2차 F/U ~ (maxFuCount+1)차 F/U)
   let fuHeaders='';
-  for(let k=0;k<fuCount;k++){
+  for(let k=0;k<maxFuCount;k++){
     const n=k+2;
     const sub=(n===3||n===6)?'<br><span class="fusub">(선물제공)</span>':'';
     fuHeaders+='<th>'+n+'차 F/U'+sub+'</th>';
   }
-  // + 버튼 (새 회차 추가)
-  fuHeaders+='<th style="min-width:56px"><button class="fuAddBtn" id="fuAddColBtn">＋</button></th>';
-  const totalCols=5+fuCount+1+1; // 번호,이름,성별,나이,시작 + fu + 우선순위,선물,관리 (+버튼 th는 fu 내에 있음)
-  const colspanAll=5+1+fuCount+3; // 5고정 + +버튼열 + fuCount + 우선순위+선물+관리
+  fuHeaders+='<th style="min-width:64px;font-size:13px;color:#64748b">회차</th>';
+  const colspanAll=5+maxFuCount+1+3; // 5고정 + maxFuCount + 회차열 + 우선순위+선물+관리
   let tableHtml='<div class="dashHead"><h2>📋 등록 대상자 대시보드</h2></div>';
   tableHtml+='<div class="dashTblOuter">'
     +'<div class="dashScrollTop" id="dashScrollTop"><div class="dashScrollInner" id="dashScrollInner"></div></div>'
@@ -1584,7 +1585,11 @@ function renderDashboard(){
           +'<label class="fuDoneLbl"><input type="checkbox" class="fuDoneChk" data-idx="'+r.idx+'" data-k="'+i+'" '+(r.fuDone[i]?'checked':'')+(r.fuCancelled[i]?' disabled':'')+'>완료</label>'
           +'<button class="fuCancelBtn'+(r.fuCancelled[i]?' active':'')+'" data-idx="'+r.idx+'" data-k="'+i+'">'+(r.fuCancelled[i]?'취소 해제':'취소')+'</button>'
         +'</td>').join('')
-      +'<td></td>'
+      +(maxFuCount>r.pFuCount?'<td colspan="'+(maxFuCount-r.pFuCount)+'"></td>':'')
+      +'<td style="text-align:center;white-space:nowrap;vertical-align:middle">'
+        +'<button class="fuAddBtn" data-idx="'+r.idx+'" title="이 환자 회차 추가" style="margin-bottom:4px">＋</button>'
+        +(r.pFuCount>1?'<button class="fuDelBtn" data-idx="'+r.idx+'" title="이 환자 마지막 회차 삭제" style="display:block;margin:0 auto;border:2px dashed #dc2626;background:#fff5f5;color:#dc2626;border-radius:8px;padding:3px 10px;font-size:14px;font-weight:700;cursor:pointer">－</button>':'')
+      +'</td>'
       +'<td class="dashPriority"><span class="prioWrap" data-idx="'+r.idx+'">'
         +(r.priority?('<span class="prioTag">'+esc(r.priority)+'</span>'):'<span class="dashMuted">—</span>')
         +'<button class="prioEditBtn" data-idx="'+r.idx+'" title="우선순위 케어 직접 수정">수정</button>'
@@ -1736,13 +1741,27 @@ function renderDashboard(){
       renderDashboard();
     };
   });
-  // 회차 추가 버튼
-  const fuAddColBtn=document.getElementById('fuAddColBtn');
-  if(fuAddColBtn) fuAddColBtn.onclick=()=>{
-    state.fuCount=(typeof state.fuCount==='number'?state.fuCount:5)+1;
-    autosave();
-    renderDashboard();
-  };
+  // 환자별 회차 추가/삭제
+  wrap.querySelectorAll('.fuAddBtn[data-idx]').forEach(btn=>{
+    btn.onclick=()=>{
+      const p=state.patients[+btn.dataset.idx]; if(!p) return;
+      p.fuCount=getPatFuCount(p)+1;
+      autosave(); renderDashboard();
+    };
+  });
+  wrap.querySelectorAll('.fuDelBtn').forEach(btn=>{
+    btn.onclick=()=>{
+      const p=state.patients[+btn.dataset.idx]; if(!p) return;
+      const fc=getPatFuCount(p); if(fc<=1) return;
+      p.fuCount=fc-1;
+      // 마지막 회차 데이터 제거
+      if(Array.isArray(p.fuOverride)) p.fuOverride=p.fuOverride.slice(0,p.fuCount);
+      if(Array.isArray(p.fuDone)) p.fuDone=p.fuDone.slice(0,p.fuCount);
+      if(Array.isArray(p.fuCancelled)) p.fuCancelled=p.fuCancelled.slice(0,p.fuCount);
+      if(Array.isArray(p.fuTime)) p.fuTime=p.fuTime.slice(0,p.fuCount);
+      autosave(); renderDashboard();
+    };
+  });
   // 상단 스크롤바 동기화
   const dashScrollTop=document.getElementById('dashScrollTop');
   const dashTableWrap=document.getElementById('dashTableWrap');
