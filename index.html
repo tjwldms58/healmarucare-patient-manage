@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko" style="--hdrH: 102px;"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>힐마루케어 회복관리 입력 v34.10</title>
+<title>힐마루케어 회복관리 입력 v34.11</title>
 <!-- 완전 오프라인: 외부 CDN 없음. 자체 수식엔진 + 자체 ZIP 내장 -->
 <script>
 
@@ -936,7 +936,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>힐마루케어 회복관리 입력</h1>
-  <span class="badge">v34.10 · 2026-09-07</span>
+  <span class="badge">v34.11 · 2026-09-07</span>
   <span class="badge g">대시보드·자동 F/U 일정·취소이력 내장 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -950,7 +950,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="r" id="delVisit" title="현재 선택한 회차(검사일자)를 삭제">🗑 회차삭제</button>
     <button class="o2" id="htmlDlBtn" title="현재 모든 데이터를 HTML에 내장해 다운로드">🌐 앱+데이터 저장</button>
     <button class="o" id="exportBtn">⬇ 엑셀(원본서식)</button>
-    <button class="p2" id="printBtn">🖨 문답지 인쇄</button><span id="saveStatus" class="savestat ok">이전 작업 복원됨</span>
+    <button class="p2" id="printBtn">🖨 문답지 인쇄</button><span id="saveStatus" class="savestat ok">이전 작업 복원됨</span><span id="fbSyncStatus" style="font-size:13px;margin-left:6px;color:#7dd3fc;"></span>
   </div>
 </header>
 <div class="tabs" id="tabs"><div class="tab active" style="background: rgb(14, 165, 233);">🏠 대시보드</div><div class="tab" style="background: rgb(241, 245, 249);">💬 피드백</div><div class="tab" style="background: rgb(241, 245, 249);">📊 상태관찰</div><div class="tab" style="background: rgb(241, 245, 249);">01 기본정보</div><div class="tab" style="background: rgb(241, 245, 249);">02 첫방문 선별</div><div class="tab" style="background: rgb(241, 245, 249);">04 증상·활력·복약</div><div class="tab" style="background: rgb(241, 245, 249);">05 영양</div><div class="tab" style="background: rgb(241, 245, 249);">06 기능</div><div class="tab" style="background: rgb(241, 245, 249);">07 심리</div><div class="tab" style="background: rgb(241, 245, 249);">08 암종별</div><div class="tab" style="background: rgb(241, 245, 249);">09 핵심요약</div><div class="tab" style="background: rgb(241, 245, 249);">🗂 취소된 대상자</div></div>
@@ -1008,7 +1008,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>방문일정 업무관리</h1>
-  <span class="badge">v34.10 · 2026-09-07</span>
+  <span class="badge">v34.11 · 2026-09-07</span>
   <span class="badge g">월간달력·방문일정·대상자목록·교통비정산 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn2" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn2" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -1041,7 +1041,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>회원 관리</h1>
-  <span class="badge">v34.10 · 2026-09-07</span>
+  <span class="badge">v34.11 · 2026-09-07</span>
   <span class="badge g">관리자 전용 · 가입 신청 목록 조회(읽기 전용)</span>
   <button id="logoutBtn3" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
 </header>
@@ -1084,13 +1084,24 @@ function autosave(){
     localStorage.setItem(LS_KEY, JSON.stringify(payload));
     dirty=false;
     const el=document.getElementById('saveStatus');
-    if(el){ el.textContent="자동저장됨 · "+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); el.className="savestat ok"; }
-    // [v33.9] Firebase 클라우드 동기화
+    const timeStr=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    if(el){ el.textContent="자동저장됨 · "+timeStr; el.className="savestat ok"; }
+    // Firebase 클라우드 동기화
     if(window.hilmaruFB && window.hilmaruFB.ready()){
+      const fbEl=document.getElementById('fbSyncStatus');
+      if(fbEl){ fbEl.textContent="☁ 동기화 중…"; fbEl.style.color="#7dd3fc"; }
       window.hilmaruFB.save('main_'+LS_KEY, payload).then(function(ok){
-        const el2=document.getElementById('saveStatus');
-        if(ok && el2 && el2.textContent.includes('자동저장됨')) el2.textContent+=' ☁';
+        const fbEl2=document.getElementById('fbSyncStatus');
+        if(!fbEl2) return;
+        if(ok){ fbEl2.textContent="☁ Firebase 저장됨"; fbEl2.style.color="#4ade80"; }
+        else{ fbEl2.textContent="⚠️ Firebase 저장 실패"; fbEl2.style.color="#f87171"; }
+      }).catch(function(e){
+        const fbEl2=document.getElementById('fbSyncStatus');
+        if(fbEl2){ fbEl2.textContent="⚠️ Firebase 오류: "+e.message; fbEl2.style.color="#f87171"; }
       });
+    } else {
+      const fbEl=document.getElementById('fbSyncStatus');
+      if(fbEl){ fbEl.textContent="⚠️ Firebase 미연결"; fbEl.style.color="#fbbf24"; }
     }
   }catch(e){
     const el=document.getElementById('saveStatus');
