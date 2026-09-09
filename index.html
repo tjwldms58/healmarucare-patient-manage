@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko" style="--hdrH: 102px;"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>힐마루케어 회복관리 입력 v34.18</title>
+<title>힐마루케어 회복관리 입력 v34.20</title>
 <!-- 완전 오프라인: 외부 CDN 없음. 자체 수식엔진 + 자체 ZIP 내장 -->
 <script>
 
@@ -783,162 +783,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
 .addFolderBtn{width:100%;margin-top:10px;padding:7px 4px;border:1.5px dashed #cbd5e1;border-radius:8px;background:none;color:#64748b;font-size:12px;cursor:pointer}
 .addFolderBtn:hover{border-color:#0369a1;color:#0369a1;background:#eff6ff}
 </style>
-<!-- Firebase Cloud Sync (v33.9) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js" crossorigin="anonymous"></script>
-</head>
-<body>
-<script>
-/* ===== 힐마루케어 Firebase 클라우드 동기화 v33.9 ===== */
-(function(){
-  'use strict';
-  var FB_CFG={
-    apiKey:"AIzaSyCtcLnU1Qb7Px8RJ7M9MEOklvUzvGMqP0M",
-    authDomain:"healmarucare-patient-manage.firebaseapp.com",
-    projectId:"healmarucare-patient-manage",
-    storageBucket:"healmarucare-patient-manage.firebasestorage.app",
-    messagingSenderId:"411080804966",
-    appId:"1:411080804966:web:8e3fbe669d1ccb979cbba7"
-  };
-  var db=null;
-  try{
-    if(typeof firebase!=='undefined'){
-      // [v34.18] 중복 초기화 방지 — 이미 앱이 있으면 재사용
-      var _fbApp;
-      try{ _fbApp=firebase.app(); }catch(e){ _fbApp=firebase.initializeApp(FB_CFG); }
-      db=_fbApp.firestore();
-    }
-  }catch(e){ console.warn('[FB] 초기화 오류:',e.message); }
-
-  function cleanForFB(data){
-    var c=JSON.parse(JSON.stringify(data));
-    // [v34.18] base64 이미지/파일 전체 제거 (Firestore 1MB 제한 대응)
-    function stripFiles(arr){ return Array.isArray(arr)?arr.map(function(r){ return Object.assign({},r,{files:[],images:[]}); }):arr; }
-    if(c.state && Array.isArray(c.state.receipts)) c.state.receipts=stripFiles(c.state.receipts);
-    if(Array.isArray(c.receipts)) c.receipts=stripFiles(c.receipts);
-    // 환자 피드백 이미지(dataUrl) 제거
-    if(c.state && Array.isArray(c.state.patients)){
-      c.state.patients=c.state.patients.map(function(p){
-        var np=Object.assign({},p);
-        ['profFeedback','nutriFeedback'].forEach(function(field){
-          if(Array.isArray(np[field])){
-            np[field]=np[field].map(function(e){
-              if(e && e.type==='image') return {type:'image',source:e.source||'',createdAt:e.createdAt||''};
-              return e;
-            });
-          }
-        });
-        return np;
-      });
-    }
-    // 출장경비 파일 제거
-    if(c.tripReport){
-      Object.keys(c.tripReport).forEach(function(wk){
-        var wr=c.tripReport[wk];
-        if(wr && Array.isArray(wr.expenses)){
-          wr.expenses=wr.expenses.map(function(ex){ return Object.assign({},ex,{files:[]}); });
-        }
-      });
-    }
-    return c;
-  }
-
-  async function fbSave(docId, data){
-    if(!db) return false;
-    // [v34.18] 멀티 문서 청크 저장 — 문서 전체 크기 1MB 제한 대응
-    // 각 청크를 별도 문서(base_c0, base_c1...)에 저장, 메타만 base 문서에
-    var clean=cleanForFB(data);
-    var str=JSON.stringify(clean);
-    var compressed=(typeof LZString!=='undefined')?LZString.compressToUTF16(str):str;
-    var CHUNK=300000; // 300K chars → UTF-8 최대 900KB, 문서 한도 이내
-    var base=docId.replace(/\//g,'_');
-    var col=db.collection('hilmaru');
-    var lz=typeof LZString!=='undefined';
-    var total=Math.ceil(compressed.length/CHUNK)||1;
-    // 청크 문서 병렬 저장
-    var tasks=[];
-    for(var ci=0;ci<total;ci++){
-      tasks.push(col.doc(base+'_c'+ci).set({d:compressed.slice(ci*CHUNK,(ci+1)*CHUNK)}));
-    }
-    await Promise.all(tasks);
-    // 메타 문서 저장 (인덱스)
-    await col.doc(base).set({chunks:total, lz:lz, ts:Date.now()});
-    return true;
-  }
-
-  async function fbLoad(docId){
-    if(!db) return null;
-    try{
-      var base=docId.replace(/\//g,'_');
-      var col=db.collection('hilmaru');
-      var snap=await col.doc(base).get();
-      if(!snap.exists) return null;
-      var meta=snap.data();
-      if(!meta) return null;
-      var compressed;
-      if(meta.d){
-        // 구버전 단일 필드 호환
-        compressed=meta.d;
-      } else if(meta.chunks && meta.chunks>0){
-        // [v34.18] 멀티 문서 청크 재조합
-        var chunkSnaps=await Promise.all(
-          Array.from({length:meta.chunks},function(_,i){ return col.doc(base+'_c'+i).get(); })
-        );
-        compressed=chunkSnaps.map(function(s){ return (s.exists&&s.data())?s.data().d||'':''; }).join('');
-      } else {
-        return null;
-      }
-      if(!compressed) return null;
-      var str=(meta.lz&&typeof LZString!=='undefined')?LZString.decompressFromUTF16(compressed):compressed;
-      return {data:JSON.parse(str),ts:meta.ts||0};
-    }catch(e){ console.warn('[FB] 불러오기 오류:',e.message); return null; }
-  }
-
-  function showRestoreBanner(mainFb, schedFb, mainKey, schedKey){
-    if(document.getElementById('hilmaruFbBanner')) return;
-    var div=document.createElement('div');
-    div.id='hilmaruFbBanner';
-    div.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#1e40af;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3);';
-    div.innerHTML='<span>☁️ Firebase에 저장된 데이터가 있습니다.</span>'
-      +'<button id="hilmaruFbLoadBtn" style="background:#fff;color:#1e40af;border:none;border-radius:6px;padding:5px 14px;cursor:pointer;font-weight:700;">불러오기</button>'
-      +'<button id="hilmaruFbCloseBtn" style="background:transparent;color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.5);border-radius:6px;padding:4px 10px;cursor:pointer;">닫기</button>';
-    document.body.insertBefore(div,document.body.firstChild);
-    document.getElementById('hilmaruFbLoadBtn').onclick=function(){
-      try{
-        if(mainFb&&mainFb.data) localStorage.setItem(mainKey,JSON.stringify(mainFb.data));
-        if(schedFb&&schedFb.data) localStorage.setItem(schedKey,JSON.stringify(schedFb.data));
-        location.reload();
-      }catch(e){ alert('오류: '+e.message); }
-    };
-    document.getElementById('hilmaruFbCloseBtn').onclick=function(){ div.remove(); };
-  }
-
-  window.addEventListener('load',function(){
-    setTimeout(async function(){
-      if(!db) return;
-      var mainKey=window.__patientAppLsKey||'hilmaru_care_autosave_v6';
-      var schedKey=window.__schedAppLsKey||'hilmaru_sched_autosave_v1';
-      var mainHas=!!localStorage.getItem(mainKey);
-      var schedHas=!!localStorage.getItem(schedKey);
-      if(mainHas&&schedHas) return; // 둘 다 로컬에 있으면 Firebase 확인 불필요
-      var results=await Promise.all([
-        mainHas?Promise.resolve(null):fbLoad('main_'+mainKey).catch(function(){ return null; }),
-        schedHas?Promise.resolve(null):fbLoad('sched_'+schedKey).catch(function(){ return null; })
-      ]);
-      if(results[0]||results[1]){
-        showRestoreBanner(results[0],results[1],mainKey,schedKey);
-      }
-    },3000);
-  });
-
-  window.hilmaruFB={
-    save:fbSave,
-    load:fbLoad,
-    ready:function(){ return !!db; }
-  };
-})();
-</script>
+<!-- [v34.20] Firebase 제거 — 단일 기기 사용으로 localStorage만 사용 -->
 <div id="loginScreen" style="display: none;">
   <div class="loginBlob" style="width:220px;height:220px;background:#d9f7c8;top:-60px;left:-60px;"></div>
   <div class="loginBlob" style="width:160px;height:160px;background:#eafce3;bottom:-40px;right:-30px;"></div>
@@ -988,7 +833,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>힐마루케어 회복관리 입력</h1>
-  <span class="badge">v34.18 · 2026-09-07</span>
+  <span class="badge">v34.20 · 2026-09-07</span>
   <span class="badge g">대시보드·자동 F/U 일정·취소이력 내장 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -1062,7 +907,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>방문일정 업무관리</h1>
-  <span class="badge">v34.18 · 2026-09-07</span>
+  <span class="badge">v34.20 · 2026-09-07</span>
   <span class="badge g">월간달력·방문일정·대상자목록·교통비정산 · 완전 오프라인(외부 라이브러리 0)</span>
   <button id="hdrExportBtn2" class="no-print" style="background:#0284c7;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📤 JSON 내보내기</button>
   <button id="hdrImportBtn2" class="no-print" style="background:#7c3aed;color:#fff;border-radius:8px;padding:5px 11px;font-size:14px;font-weight:600;">📥 JSON 불러오기</button>
@@ -1097,7 +942,7 @@ tr.schedCancelledRow td:not(.schedMgmtCol){background:#f8fafc}
     <button class="appSwitchBtn" data-app="schedule" title="방문일정 업무관리">📅 일정</button>
   </div>
   <h1>회원 관리</h1>
-  <span class="badge">v34.18 · 2026-09-07</span>
+  <span class="badge">v34.20 · 2026-09-07</span>
   <span class="badge g">관리자 전용 · 가입 신청 목록 조회(읽기 전용)</span>
   <button id="logoutBtn3" class="no-print" style="background:#e2e8f0;color:#1e293b;">🔒 로그아웃</button>
 </header>
@@ -1142,23 +987,7 @@ function autosave(){
     const el=document.getElementById('saveStatus');
     const timeStr=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     if(el){ el.textContent="자동저장됨 · "+timeStr; el.className="savestat ok"; }
-    // Firebase 클라우드 동기화
-    if(window.hilmaruFB && window.hilmaruFB.ready()){
-      const fbEl=document.getElementById('fbSyncStatus');
-      if(fbEl){ fbEl.textContent="☁ 동기화 중…"; fbEl.style.color="#7dd3fc"; }
-      window.hilmaruFB.save('main_'+LS_KEY, payload).then(function(ok){
-        const fbEl2=document.getElementById('fbSyncStatus');
-        if(!fbEl2) return;
-        if(ok){ fbEl2.textContent="☁ Firebase 저장됨"; fbEl2.style.color="#4ade80"; }
-        else{ fbEl2.textContent="⚠️ Firebase 저장 실패"; fbEl2.style.color="#f87171"; }
-      }).catch(function(e){
-        const fbEl2=document.getElementById('fbSyncStatus');
-        if(fbEl2){ fbEl2.textContent="⚠️ Firebase 오류: "+e.message; fbEl2.style.color="#f87171"; }
-      });
-    } else {
-      const fbEl=document.getElementById('fbSyncStatus');
-      if(fbEl){ fbEl.textContent="⚠️ Firebase 미연결"; fbEl.style.color="#fbbf24"; }
-    }
+    // [v34.20] Firebase 제거 — localStorage만 사용
   }catch(e){
     const el=document.getElementById('saveStatus');
     if(el){ el.textContent="자동저장 실패(저장공간 부족)"; el.className="savestat err"; }
@@ -2927,14 +2756,7 @@ window.SchedApp = (function(){
       localStorage.setItem(LS_KEY, JSON.stringify(state));
       const el=document.getElementById('saveStatus2');
       if(el){ el.textContent="자동저장됨 · "+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); el.className="savestat ok"; }
-      // [v33.9] Firebase 클라우드 동기화
-      if(window.hilmaruFB && window.hilmaruFB.ready()){
-        const payload=Object.assign({},state,{ts:Date.now()});
-        window.hilmaruFB.save('sched_'+LS_KEY, payload).then(function(ok){
-          const el2=document.getElementById('saveStatus2');
-          if(ok && el2 && el2.textContent.includes('자동저장됨')) el2.textContent+=' ☁';
-        }).catch(function(e){ console.warn('[FB] 일정 저장 오류:',e.message); }); // [v34.18]
-      }
+      // [v34.20] Firebase 제거 — localStorage만 사용
     }catch(e){
       const el=document.getElementById('saveStatus2');
       if(el){ el.textContent="자동저장 실패(저장공간 부족)"; el.className="savestat err"; }
